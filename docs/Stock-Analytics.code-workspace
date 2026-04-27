@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"name": "stock-market-app",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
