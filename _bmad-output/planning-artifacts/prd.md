@@ -1,28 +1,36 @@
 ---
-stepsCompleted: []
-inputDocuments: ["docs/Product_vision notes.md", "docs/Product-Inspiration.md"]
 workflowType: 'prd'
+workflow: 'edit'
+classification:
+  domain: 'financial_trading'
+  projectType: 'hybrid_web_app_api_backend_data_pipeline'
+  complexity: 'high'
+inputDocuments:
+  - 'docs/Product_vision notes.md'
+  - 'docs/Product-Inspiration.md'
+stepsCompleted:
+  - 'step-e-01-discovery'
+  - 'step-e-02-review'
+  - 'step-e-03-edit'
+lastEdited: '2026-04-30'
+editHistory:
+  - date: '2026-04-30'
+    changes: 'Applied MVP-focused validation findings: added classification, user journeys, source-level trading thresholds, measurable NFRs, financial risk posture, and web/API/data-pipeline requirements.'
 ---
 
 # Product Requirements Document - AlphaMomentum Recommender
 
 **Author:** GitHub Copilot
 **Date:** 2026-04-26
+**Last Edited:** 2026-04-30
 
 ## 1. Product Overview
 
-AlphaMomentum Recommender is a systematic trade recommendation product for beginner and entry-level traders. It produces a daily curated set of momentum trade ideas with:
-
-- entry zone guidance
-- exit and stop-loss recommendations
-- risk calculations
-- supporting analytical justification
-
-The product is designed to reduce emotional decision-making by creating a repeatable, rule-driven workflow around momentum trading.
+AlphaMomentum Recommender is a systematic trade recommendation product for beginner and entry-level traders. The MVP produces a daily curated set of 4-5 equity momentum trade ideas with entry zone, stop-loss, profit target, risk/reward, risk guidance, and supporting rationale.
 
 ### Problem Statement
 
-Beginner traders often lack a systematic process for identifying momentum trades, defining entry and exit rules, and quantifying risk. This leads to inconsistent trades, unclear trade logic, and difficulty learning from results.
+Beginner traders often lack a repeatable process for identifying momentum trades, defining entry and exit rules, quantifying risk, and reviewing outcomes. This leads to inconsistent trade selection, unclear trade logic, and poor learning loops.
 
 ### Target Users
 
@@ -34,306 +42,398 @@ Primary users:
 
 Secondary users:
 
-- quantitative traders who want a simple momentum idea generator
-- trading coaches and educators seeking explainable trade examples
+- quantitative traders evaluating a simple momentum idea generator
+- trading coaches and educators reviewing explainable trade examples
+
+### MVP Boundary
+
+The MVP provides informational trade recommendations and risk education. It does not provide personalized financial advice, automated order execution, broker integration, or live trading. Users remain responsible for trading decisions.
 
 ### Value Proposition
 
 AlphaMomentum Recommender helps users by:
 
-- selecting high-quality momentum candidates from a broader universe
-- generating actionable entry, stop, and target recommendations
-- scoring ideas by trend strength, volatility, and sentiment
+- selecting high-quality momentum candidates from a broad equity universe
+- generating actionable entry, stop, target, and risk guidance
+- ranking candidates by momentum quality, volatility, and sentiment where available
 - explaining why each recommendation is valid and what can invalidate it
 
 ## 2. Success Metrics
 
 ### Business / Product Metrics
 
-- daily active users of recommendation engine
-- recommendation adoption rate (users viewing and acting on ideas)
-- retention of users over 30 days
-- velocity of release cycles for new features
+- generate 4-5 MVP recommendations for at least 95% of scheduled trading days
+- provide complete recommendation cards for 100% of published ideas
+- retain recommendation history for all published MVP recommendations
 
 ### Trading Outcome Metrics
 
-- hit rate for recommended trades in backtest and live validation
-- average risk/reward ratio of recommendations
-- average drawdown and win/loss ratio
-- reduction in volatility of recommended trade outcomes compared to baseline
+- track hit rate, average risk/reward, win/loss ratio, and drawdown for all published recommendations
+- support walk-forward validation reporting before any paper-trading or broker-integration phase
+- record recommendation outcome status within one market day after stop, target, or invalidation event detection
 
 ### Quality & Trust Metrics
 
-- percentage of recommendations with clear justification text
-- data freshness percentage for market and sentiment inputs
-- system uptime / availability for recommendation service
+- include entry zone, stop-loss, target, risk/reward, invalidation criteria, and explanation for 100% of published recommendations
+- complete daily data refresh and recommendation generation by 8:00 AM US Eastern time on trading days
+- flag stale or incomplete market data before recommendations are published
+- serve cached recommendation retrieval requests in under 500ms for the 95th percentile under normal MVP load
 
-## 3. Key Product Capabilities
+## 3. User Journeys
 
-### 3.1. Market Scanning and Filtering
+### 3.1. Beginner Trader Reviews Daily 5
 
-- scan a broad universe of liquid equities
-- apply liquidity and quality gates
-- exclude low-price, low-volume, and micro-cap names
-- support exchange, sector, or custom watchlists
+1. User opens the dashboard after the daily refresh.
+2. User sees 4-5 ranked recommendations with ticker, setup type, score, entry zone, stop, target, risk/reward, and short rationale.
+3. User opens one recommendation to inspect technical triggers, trend context, volume confirmation, invalidation criteria, and risk guidance.
+4. User decides whether to study, watch, or ignore the idea outside the system.
 
-### 3.2. Momentum Signal Engine
+### 3.2. User Reviews Risk and Invalidation
 
-- evaluate trend and momentum indicators
-- capture breakout, continuation, and momentum-strength setups
-- compute score components such as trend confirmation, volume confirmation, and momentum quality
+1. User selects a recommendation card.
+2. User compares entry zone, ATR-based stop, target, and maximum risk guidance.
+3. User sees the condition that invalidates the setup, such as trend failure, stop breach, stale data, or failed momentum threshold.
+4. User can distinguish a valid setup from a failed setup before acting.
 
-### 3.3. Risk & Exit Engine
+### 3.3. User Reviews Prior Outcomes
 
-- generate hard stop-loss levels
-- compute profit targets based on risk multiples
-- provide position risk guidance as a percentage of account value
-- support volatility-aware stop sizing (e.g. ATR-based)
+1. User opens recommendation history.
+2. User reviews prior recommendations, setup type, score, outcome status, and realized result.
+3. User identifies false positives and learns which market regimes or setup types performed poorly.
 
-### 3.4. Recommendation Explanation Layer
+### 3.4. Operator Monitors Data Freshness
+
+1. System runs scheduled market data ingestion and recommendation generation.
+2. System checks for missing, stale, or incomplete data before publishing recommendations.
+3. Operator sees pipeline status, data freshness state, and failures requiring attention.
+
+## 4. Key Product Capabilities
+
+### 4.1. Market Scanning and Filtering
+
+- scan a broad universe of liquid US equities
+- apply MVP liquidity and quality gates:
+  - market capitalization greater than $2 billion
+  - 90-day average daily volume greater than 1,000,000 shares
+  - last closing price greater than $10
+- support exchange, sector, or custom watchlists after the MVP baseline universe is stable
+
+### 4.2. Momentum Signal Engine
+
+- compute EMA9, EMA21, EMA50, EMA200, ATR14, RSI, ADX, relative volume, and breakout levels
+- apply MVP momentum gates:
+  - price greater than EMA50
+  - EMA50 greater than EMA200
+  - RSI between 60 and 75
+  - ADX greater than 25
+  - relative volume greater than 2.0 when available
+- classify setup type as breakout, continuation, or pullback for MVP display
+- rank candidates with Momentum-Quality Score (MQS):
+
+```text
+MQS = (six_month_price_change / volatility) * (1 / put_call_ratio)
+```
+
+If Put/Call ratio is unavailable, the MVP must rank candidates with a documented fallback score using price momentum, volatility, trend confirmation, and relative volume.
+
+### 4.3. Risk & Exit Engine
+
+- define entry zone as the range between EMA9 and EMA21
+- calculate hard stop as `entry - (2 x ATR14)`
+- calculate first profit target as `entry + (3 x ATR14)`
+- calculate risk/reward from entry, stop, and target
+- provide maximum risk per trade as a percentage of account balance when account balance is supplied
+- show invalidation criteria for each setup
+
+### 4.4. Recommendation Explanation Layer
 
 - explain why the trade is recommended
-- highlight the triggered pattern or signal
-- surface invalidation conditions and what would break the setup
-- include supporting evidence such as price above moving averages, volume acceleration, and sentiment signals
+- identify the triggered setup type and technical conditions
+- include supporting evidence such as trend alignment, relative volume, breakout context, and sentiment where available
+- identify what would invalidate the setup
 
-### 3.5. Dashboard Output
+### 4.5. Dashboard Output
 
-- display the final curated list of 4–5 trade ideas per day
-- show each idea as a card with entry zone, stop, target, risk/reward, score, and summary
-- include visual sentiment gauge and trend context
+- display the final curated list of 4-5 trade ideas per day
+- show each idea as a card with ticker, setup type, score, entry zone, stop, target, risk/reward, invalidation, and rationale
+- show trend strength using defined labels: weak, neutral, strong
+- show sentiment state using defined labels: bullish, neutral, warning, unavailable
+- support desktop and mobile browser layouts for the MVP dashboard
 
-### 3.6. Validation and Feedback
+### 4.6. Validation and Feedback
 
-- support backtesting and walk-forward validation of the signal engine
-- preserve a trade journal of recommendations and outcomes
+- preserve recommendation history and outcome status
+- support backtesting and walk-forward validation reporting
 - enable review of false positives and regime-specific performance
 
-## 4. Scope and Phases
+## 5. Scope and Phases
 
-### 4.1. Phase 1: MVP
+### 5.1. Phase 1: MVP
 
-Deliver a minimum viable momentum recommender with:
+Deliver a daily momentum recommender with:
 
-- daily universe scan of liquid equities
-- momentum scoring engine with trend and breakout rules
-- generation of a curated set of trade ideas, each with:
-  - entry zone
-  - stop-loss
-  - target
-  - risk/reward estimation
-  - short explanation
-- simple dashboard or API output for recommendation cards
-- deployment architecture supporting scheduled data refresh and API serving
+- daily universe scan of liquid US equities
+- liquidity gates and momentum gates listed in this PRD
+- MQS-based ranking with documented fallback when sentiment data is unavailable
+- curated Daily 5 recommendation cards
+- entry zone, stop-loss, target, risk/reward, invalidation, and explanation for every recommendation
+- private dashboard and recommendation retrieval API
+- scheduled data refresh, pipeline status, and freshness checks
+- recommendation history and outcome tracking
 
-### 4.2. Phase 2: Quality, Explainability, and Validation
+### 5.2. Phase 2: Quality, Explainability, and Validation
 
 Enhance the product with:
 
-- sentiment and options flow filters (Put/Call ratio overlay)
-- multi-timeframe validation (higher timeframe trend + setup timeframe entry)
+- required sentiment and options-flow filters
+- multi-timeframe validation
 - market regime detection
-- additional signal taxonomy (breakout, continuation, pullback)
-- explanation layer with why/what/invalidations
-- backtest and walk-forward validation reporting
-- error handling and data quality monitoring
+- expanded signal taxonomy
+- stronger explanation layer with historical analogs
+- slippage and transaction-cost modeling
+- deeper backtest and walk-forward validation reporting
 
-### 4.3. Phase 3: Scale, Execution Readiness, and Personalization
+### 5.3. Phase 3: Scale, Execution Readiness, and Personalization
 
 Extend the system to:
 
 - support paper trading and broker abstraction
 - add user preferences and watchlists
 - scale to larger candidate universes
-- provide trade journal analytics and performance dashboard
+- provide portfolio exposure controls
 - add alerts and intraday refresh
-- support portfolio exposure controls and position sizing guidance across multiple recommendations
+- support performance analytics and learning-loop intelligence
 
-## 5. Functional Requirements
+## 6. Domain and Risk Requirements
 
-### 5.1. Recommendation Generation
+- The MVP must present recommendations as informational and educational, not personalized financial advice.
+- The MVP must not place trades, route orders, or connect to broker execution.
+- Every recommendation must display entry, stop, target, risk/reward, invalidation, and rationale before the user can inspect details.
+- The system must retain an audit trail of published recommendations, inputs used for scoring, generated rationale, and outcome status.
+- User-specific preferences, watchlists, and account-balance inputs must require authenticated access if enabled.
+- The PRD and downstream architecture must preserve data provenance for market data, options sentiment, and generated explanations.
+
+## 7. Project-Type Requirements
+
+### 7.1. Web Dashboard
+
+- MVP dashboard must support current Chrome, Edge, Safari, and Firefox desktop browsers.
+- MVP dashboard must support mobile viewport review for recommendation cards.
+- Recommendation cards must display without horizontal scrolling at 390px viewport width.
+- Private dashboard SEO is not applicable.
+- Dashboard UI must target WCAG 2.1 AA contrast and keyboard navigation for core recommendation review flows.
+
+### 7.2. Recommendation API
+
+- API consumers can retrieve today's recommendations, recommendation details, recommendation history, and pipeline freshness status.
+- User-specific data access must require authentication when preferences, watchlists, or account-balance inputs are enabled.
+- API responses must identify stale-data or no-recommendation states explicitly.
+
+### 7.3. Data Pipeline
+
+- Scheduled ingestion must fetch required OHLCV data before recommendation generation.
+- Pipeline checks must block publishing if required market data is missing or stale.
+- Pipeline status must expose last successful refresh time, failed source, and failure reason.
+
+## 8. Functional Requirements
+
+### 8.1. Recommendation Generation
 
 - FR-1: System must ingest daily OHLCV market data for screened equities.
-- FR-2: System must compute moving averages, ATR, RSI, ADX, relative volume, and breakout levels.
-- FR-3: System must apply momentum filters and rank candidates by a composite score.
-- FR-4: System must produce at least 4–5 final recommendations daily.
+- FR-2: System must compute EMA9, EMA21, EMA50, EMA200, ATR14, RSI, ADX, relative volume, and breakout levels.
+- FR-3: System must apply MVP liquidity gates, momentum gates, and MQS ranking to select candidates.
+- FR-4: System must produce 4-5 final recommendations daily when at least 4 candidates pass validation gates.
 - FR-5: System must output entry zone, stop-loss, profit target, risk amount, and risk/reward ratio for each recommendation.
 - FR-6: System must generate a concise explanation for each recommendation.
 
-### 5.2. Risk Management
+### 8.2. Risk Management
 
-- FR-7: System must calculate stop-loss using volatility-adjusted logic.
-- FR-8: System must calculate target as a multiple of risk distance.
-- FR-9: System must provide a recommended maximum risk per trade as a percent of account balance.
+- FR-7: System must calculate stop-loss as `entry - (2 x ATR14)` unless a configured strategy override is documented.
+- FR-8: System must calculate first target as `entry + (3 x ATR14)` unless a configured strategy override is documented.
+- FR-9: System must provide recommended maximum risk per trade as a percentage of account balance when account balance is supplied.
 - FR-10: System must annotate invalidation criteria for each setup.
 
-### 5.3. Data and Analytics
+### 8.3. Data and Analytics
 
-- FR-11: System must support a configurable universe of symbols.
-- FR-12: System must track indicator values and scoring components for each candidate.
-- FR-13: System must store recommendation history for analysis.
-- FR-14: System must expose a summary of the logic used for the selected recommendation.
+- FR-11: System must support a configurable baseline universe of symbols.
+- FR-12: System must track indicator values, score components, gate results, and data freshness for each candidate.
+- FR-13: System must store recommendation history and outcome status for analysis.
+- FR-14: System must expose the logic summary used for each selected recommendation.
 
-### 5.4. User Experience
+### 8.4. User Experience
 
-- FR-15: System must present recommendations in an easy-to-read list or dashboard.
-- FR-16: System must clearly label entry, stop, target, and risk values.
-- FR-17: System must visually surface the strength of trend and sentiment.
+- FR-15: System must present each recommendation card with ticker, setup type, score, entry, stop, target, risk/reward, invalidation, and rationale visible in the card or detail view.
+- FR-16: System must clearly label entry, stop, target, risk, and invalidation values.
+- FR-17: System must display trend strength and sentiment using defined labels and unavailable states.
 - FR-18: System must indicate when a recommendation is no longer valid due to failed conditions.
 
-## 6. Non-Functional Requirements
+### 8.5. API and Pipeline
 
-### 6.1. Performance
+- FR-19: System must expose retrieval for today's recommendations, recommendation details, recommendation history, and data freshness status.
+- FR-20: System must block recommendation publishing when required market data fails freshness or completeness checks.
 
-- NFR-1: Daily recommendation generation must complete within the nightly data refresh window.
-- NFR-2: API response time for recommendation retrieval should be under 500ms for cached results.
+## 9. Non-Functional Requirements
 
-### 6.2. Reliability
+### 9.1. Performance
 
-- NFR-3: Data ingestion pipelines must include validation checks for missing or stale data.
-- NFR-4: The system must log pipeline failures and alert on data freshness issues.
+- NFR-1: Daily recommendation generation must complete by 8:00 AM US Eastern time on trading days as measured by scheduled job completion logs.
+- NFR-2: Cached API retrieval for today's recommendations must respond in under 500ms at the 95th percentile under normal MVP load as measured by application telemetry.
+- NFR-3: Dashboard recommendation cards must render within 2 seconds at the 95th percentile after cached API response on supported browsers under normal MVP load.
 
-### 6.3. Maintainability
+### 9.2. Reliability
 
-- NFR-5: Indicator and signal rules should be configurable outside of core code where practical.
-- NFR-6: The product should have a clear separation between data ingestion, signal computation, and recommendation serving.
+- NFR-4: Market data freshness checks must detect missing OHLCV fields, stale trading dates, and incomplete symbol coverage before recommendations are published.
+- NFR-5: Pipeline failures must be logged with failed source, failure reason, timestamp, and affected recommendation run.
+- NFR-6: Data freshness or pipeline failure alerts must be available to the operator within 15 minutes of detection.
 
-### 6.4. Security and Compliance
+### 9.3. Maintainability
 
-- NFR-7: Market data and user configuration should be stored securely.
-- NFR-8: Access to the recommendation API must be authenticated if user-specific preferences are enabled.
+- NFR-7: Indicator thresholds, liquidity gates, momentum gates, and scoring weights must be configurable without changing recommendation presentation code.
+- NFR-8: Data ingestion, signal computation, recommendation generation, API serving, and dashboard presentation must remain separately testable components.
 
-## 7. Deployment Architecture
+### 9.4. Security and Compliance
 
-### 7.1. Overview
+- NFR-9: User-specific preferences, watchlists, and account-balance inputs must be protected by authenticated access when enabled.
+- NFR-10: Published recommendation records, score inputs, rationale, and outcome status must be retained for at least 12 months for audit and review.
+- NFR-11: The dashboard must meet WCAG 2.1 AA contrast for recommendation cards and support keyboard navigation for core review flows.
+
+## 10. Deployment Architecture
+
+### 10.1. Overview
 
 AlphaMomentum Recommender will be deployed as a modular service with these layers:
 
-- Data ingestion and processing
-- Feature and indicator computation
-- Recommendation engine
+- data ingestion and processing
+- feature and indicator computation
+- recommendation engine
 - API/dashboard serving
-- Monitoring and alerts
+- monitoring and alerts
 
-### 7.2. Components
+### 10.2. Components
 
-#### 7.2.1. Data Layer
+#### 10.2.1. Data Layer
 
-- Historical market data store for OHLCV and derived indicators
-- Metadata store for symbol universe, watchlists, and user preferences
-- Optional sentiment data store for Put/Call and sentiment signals
+- historical market data store for OHLCV and derived indicators
+- metadata store for symbol universe, watchlists, and user preferences
+- optional sentiment data store for Put/Call and sentiment signals
 
-#### 7.2.2. Processing Layer
+#### 10.2.2. Processing Layer
 
-- Ingestion jobs to fetch market data daily
-- Feature generation jobs to compute indicators and candidate scores
-- Recommendation generation jobs to build the final Daily 5
+- ingestion jobs to fetch market data daily
+- feature generation jobs to compute indicators and candidate scores
+- recommendation generation jobs to build the final Daily 5
 
-#### 7.2.3. Application Layer
+#### 10.2.3. Application Layer
 
-- Recommendation API service exposing endpoints for:
-  - retrieving today’s recommendations
+- recommendation API service exposing endpoints for:
+  - retrieving today's recommendations
   - fetching symbol analytics
   - retrieving explanation text
-- Dashboard/frontend consuming API output
+  - retrieving data freshness status
+- dashboard/frontend consuming API output
 
-#### 7.2.4. Delivery and Orchestration
+#### 10.2.4. Delivery and Orchestration
 
-- Containerized backend services
-- Scheduled batch jobs for nightly refresh
-- Cache layer for low-latency recommendation retrieval
+- containerized backend services
+- scheduled batch jobs for daily refresh
+- cache layer for low-latency recommendation retrieval
 - CI/CD pipeline for deployments
 
-#### 7.2.5. Monitoring
+#### 10.2.5. Monitoring
 
 - data freshness checks
 - pipeline health alerts
 - API availability monitoring
-- performance and accuracy tracking
+- performance and recommendation outcome tracking
 
-### 7.3. Example Cloud Implementation
+### 10.3. Example Cloud Implementation
 
-- Compute: Kubernetes / managed containers
-- Storage: PostgreSQL / TimescaleDB or cloud-managed SQL database
-- Jobs: scheduled container tasks or serverless scheduled functions
-- Cache: Redis or in-memory cache for recommendation responses
-- Observability: logs, metrics, and alerts via cloud provider or Prometheus/Grafana
+- Compute: managed containers or scheduled serverless jobs
+- Storage: relational or time-series database for OHLCV, indicators, recommendations, and audit records
+- Cache: managed cache or application cache for today's recommendations
+- Observability: logs, metrics, and alerts through the selected cloud or monitoring provider
 
-## 8. Roadmap
+## 11. Roadmap
 
-### 8.1. Phase 1: MVP (0–8 weeks)
+### 11.1. Phase 1: MVP (0-8 weeks)
 
 Deliver a working momentum recommendation system with:
 
-- basic universe filters and liquidity gate
+- basic universe filters and liquidity gates
 - trend and breakout-based momentum scoring
-- daily curated reference output of 4–5 trade ideas
-- entry, stop, target, and risk summaries
-- simple recommendation explanation text
-- deployment pipeline for data refresh and API serving
+- daily curated output of 4-5 trade ideas
+- entry, stop, target, risk, invalidation, and explanation summaries
+- private dashboard and recommendation retrieval API
+- deployment pipeline for daily data refresh and API serving
 
-### 8.2. Phase 2: Quality & Trust (8–16 weeks)
+### 11.2. Phase 2: Quality & Trust (8-16 weeks)
 
 Add product quality and validation capabilities:
 
-- sentiment overlay and Put/Call ratio filtering
+- required sentiment overlay and Put/Call ratio filtering
 - multi-timeframe confirmation
 - market regime detection
 - stronger explanation layer
 - backtest and walk-forward validation reporting
 - trade journal and performance logging
+- slippage and transaction cost modeling
 
-### 8.3. Phase 3: Scale & Trading Readiness (16–24 weeks)
+### 11.3. Phase 3: Scale & Trading Readiness (16-24 weeks)
 
 Expand toward a mature platform:
 
 - paper trading and broker integration readiness
 - personalized watchlist and preference support
 - portfolio exposure controls
-- continuous intraday refresh / alerts
+- continuous intraday refresh and alerts
 - deeper performance analytics and learning loop
 
-## 9. Risks and Assumptions
+## 12. Risks and Assumptions
 
-### 9.1. Risks
+### 12.1. Risks
 
 - market regime shifts may reduce signal effectiveness
-- sentiment overlays can be noisy or delayed
+- sentiment overlays can be noisy, delayed, or unavailable
 - data quality issues can invalidate recommendations
 - beginner traders may misuse recommendations without understanding risk
+- formula-driven scoring can overfit if not validated against out-of-sample periods
 
-### 9.2. Assumptions
+### 12.2. Assumptions
 
 - users want trade recommendations, not automated order execution
-- the initial product will focus on equities with sufficient liquidity
-- risk controls must be explicit and easy to understand
-- a simple daily signal is more valuable to beginners than a complex intraday system
+- the initial product will focus on liquid US equities
+- risk controls must be explicit and visible on every recommendation
+- daily recommendations are more valuable to beginners than complex intraday signals in the MVP
+- Put/Call ratio may be unavailable for some MVP runs and must not block all recommendations
 
-## 10. Dependencies
+## 13. Dependencies
 
 - reliable market data provider for OHLCV and volume
-- access to options sentiment or Put/Call data for Phase 2
-- indicator libraries such as Pandas-TA or TA-Lib
-- hosting platform for backend services and batch jobs
+- options sentiment or Put/Call data provider for sentiment-enhanced scoring
+- technical indicator computation support
+- hosting platform for backend services, scheduled jobs, dashboard, and API
 
-## 11. Appendix
+## 14. Appendix
 
-### 11.1. Example Recommendation Structure
+### 14.1. Example Recommendation Structure
 
 - Symbol: `XYZ`
-- Entry zone: `123.00–126.50`
-- Stop loss: `120.00`
-- Target: `135.00`
-- Risk/reward: `1:2.5`
-- Risk amount: `1%` of account
-- Explanation: `Price has broken above the 20-day high with strong volume, trend confirmed by EMA50 > EMA200, and Put/Call ratio remains bullish.`
+- Setup type: `Breakout`
+- Score: `82/100`
+- Entry zone: `EMA9-EMA21 range`
+- Stop loss: `entry - (2 x ATR14)`
+- Target 1: `entry + (3 x ATR14)`
+- Risk/reward: `1:1.5 or better`
+- Risk amount: `1%` of account when account balance is supplied
+- Invalidation: `Close below stop or failure of trend gate`
+- Explanation: `Price has broken above the 20-day high with strong volume, trend confirmed by EMA50 > EMA200, and Put/Call ratio remains bullish when available.`
 
-### 11.2. Glossary
+### 14.2. Glossary
 
+- ADX: Average Directional Index
 - ATR: Average True Range
 - EMA: Exponential Moving Average
 - MQS: Momentum-Quality Score
 - OHLCV: Open, High, Low, Close, Volume
 - RSI: Relative Strength Index
-- ADX: Average Directional Index
 - Put/Call Ratio: options sentiment measure
