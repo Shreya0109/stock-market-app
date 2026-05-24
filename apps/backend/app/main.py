@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from api.routers.health import router as health_router
+from apps.backend.routers.health import router as health_router
 
 
 app = FastAPI(title="AlphaMomentum API")
