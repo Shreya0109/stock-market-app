@@ -23,8 +23,7 @@ cd ../..
 
 **Terminal 1 — FastAPI Backend (Port 8000):**
 ```bash
-cd apps/api
-python -m uvicorn app.main:app --reload
+python -m uvicorn apps.api.app.main:app --reload
 ```
 
 Backend will initialize SQLite database at `./alphamomentum.db`

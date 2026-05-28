@@ -1,1 +1,1 @@
-Run: trade-env/bin/uvicorn apps.backend.app.main:app --reload
+Run: trade-env/bin/uvicorn apps.api.app.main:app --reload

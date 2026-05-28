@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from apps.backend.app.main import app
+from apps.api.app.main import app
 
 
 def call_asgi_app(path: str) -> tuple[int, dict[str, str]]:
