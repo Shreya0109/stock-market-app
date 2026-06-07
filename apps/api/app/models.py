@@ -2,9 +2,13 @@
 SQLAlchemy database models for AlphaMomentum.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean
-from datetime import datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, UniqueConstraint
+from datetime import UTC, datetime
 from apps.api.database import Base
+
+
+def utc_now_naive() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class Symbol(Base):
@@ -17,9 +21,11 @@ class Symbol(Base):
     name = Column(String(255))
     market_cap = Column(Float, nullable=True)
     avg_volume_90d = Column(Float, nullable=True)
+    last_close = Column(Float, nullable=True)
+    metadata_updated_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
 
 class DailyBar(Base):
@@ -35,7 +41,11 @@ class DailyBar(Base):
     low = Column(Float, nullable=False)
     close = Column(Float, nullable=False)
     volume = Column(Float, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now_naive)
+
+    __table_args__ = (
+        UniqueConstraint("symbol", "date", name="uq_daily_bars_symbol_date"),
+    )
 
 
 class IndicatorValue(Base):
@@ -55,7 +65,7 @@ class IndicatorValue(Base):
     adx = Column(Float, nullable=True)
     atr_14 = Column(Float, nullable=True)
     relative_volume = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now_naive)
 
 
 class Recommendation(Base):
@@ -76,8 +86,8 @@ class Recommendation(Base):
     rationale = Column(Text)
     status = Column(String(50), default="open")  # open, target_hit, stop_hit, invalidated, expired
     risk_reward = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
 
 class PipelineRun(Base):
@@ -93,4 +103,4 @@ class PipelineRun(Base):
     recommendations_count = Column(Integer, default=0)
     status = Column(String(50), default="running")  # running, success, failed
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now_naive)

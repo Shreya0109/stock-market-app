@@ -1,0 +1,6 @@
+# Baseline MVP universe. One ticker per line; comments and blank lines are ignored.
+AAPL
+MSFT
+GOOGL
+AMZN
+NVDA

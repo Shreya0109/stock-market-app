@@ -18,11 +18,13 @@ API_TITLE = "AlphaMomentum Recommender API"
 API_VERSION = "0.1.0"
 
 # Market Data Provider
-MARKET_DATA_PROVIDER = os.getenv("MARKET_DATA_PROVIDER", "mock")  # mock or polygon or alpaca
+MARKET_DATA_PROVIDER = os.getenv("MARKET_DATA_PROVIDER", "mock")  # mock or yahoo
+SYMBOL_UNIVERSE_FILE = os.getenv("SYMBOL_UNIVERSE_FILE", "config/symbol_universe.txt")
 
 # Pipeline Configuration
 PIPELINE_HOUR = int(os.getenv("PIPELINE_HOUR", "16"))  # 4 PM market close
 PIPELINE_MINUTE = int(os.getenv("PIPELINE_MINUTE", "0"))
+FRESHNESS_MAX_STALE_DAYS = int(os.getenv("FRESHNESS_MAX_STALE_DAYS", "5"))
 
 # Recommendation Gates
 MIN_MARKET_CAP = 2_000_000_000  # $2B
