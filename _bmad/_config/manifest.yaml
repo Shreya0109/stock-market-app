@@ -1,13 +1,41 @@
 installation:
-  version: 6.3.0
-  installDate: 2026-04-12T05:34:56.387Z
-  lastUpdated: 2026-04-12T05:34:56.387Z
+  version: 6.5.0
+  installDate: 2026-04-27T02:16:16.938Z
+  lastUpdated: 2026-04-27T02:16:16.938Z
 modules:
   - name: core
-    version: 6.3.0
-    installDate: 2026-04-12T05:34:56.294Z
-    lastUpdated: 2026-04-12T05:34:56.387Z
+    version: 6.5.0
+    installDate: 2026-04-27T02:16:16.438Z
+    lastUpdated: 2026-04-27T02:16:16.914Z
     source: built-in
     npmPackage: null
     repoUrl: null
-ides: []
+  - name: bmm
+    version: 6.5.0
+    installDate: 2026-04-27T02:16:16.341Z
+    lastUpdated: 2026-04-27T02:16:16.915Z
+    source: built-in
+    npmPackage: null
+    repoUrl: null
+  - name: bmb
+    version: v1.7.0
+    installDate: 2026-04-27T02:16:16.787Z
+    lastUpdated: 2026-04-27T02:16:16.925Z
+    source: external
+    npmPackage: bmad-builder
+    repoUrl: https://github.com/bmad-code-org/bmad-builder
+    channel: stable
+    sha: 86033fc9aeae2ca6d52c7cdb675c1f4bf17fc1c1
+  - name: cis
+    version: v0.2.0
+    installDate: 2026-04-27T02:16:16.861Z
+    lastUpdated: 2026-04-27T02:16:16.938Z
+    source: external
+    npmPackage: bmad-creative-intelligence-suite
+    repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+    channel: stable
+    sha: 14a63b893c07173b7a6cfe0fb6a9a72ba51d3cf1
+ides:
+  - github-copilot
+  - claude-code
+  - cursor

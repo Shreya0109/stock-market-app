@@ -1,0 +1,10 @@
+fastapi[standard]
+uvicorn
+pytest
+sqlalchemy
+alembic
+pandas
+numpy
+apscheduler
+python-dotenv
+yfinance

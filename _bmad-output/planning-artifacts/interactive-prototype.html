@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AlphaMomentum Recommender Prototype</title>
+  <style>
+    :root {
+      --bg: #f5f7f8;
+      --panel: #ffffff;
+      --panel-soft: #eef3f0;
+      --ink: #17211c;
+      --muted: #66716b;
+      --line: #d8dfdb;
+      --accent: #1f7a55;
+      --accent-soft: #dff2e9;
+      --warning: #a15c12;
+      --warning-soft: #fff1dc;
+      --danger: #a43131;
+      --danger-soft: #fde7e7;
+      --info: #245b8f;
+      --info-soft: #e2eef9;
+      --shadow: 0 18px 45px rgba(23, 33, 28, 0.12);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px 1fr;
+    }
+
+    .sidebar {
+      background: #13241c;
+      color: #f6fbf8;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 6px;
+    }
+
+    .brand strong {
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      color: #b6c7bf;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #dce8e2;
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 6px;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    .sidebar-note {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding-top: 18px;
+      color: #b6c7bf;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    main {
+      min-width: 0;
+      padding: 28px 34px 42px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: 30px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status-strip {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .dot.warning { background: var(--warning); }
+    .dot.danger { background: var(--danger); }
+    .dot.info { background: var(--info); }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .tabs {
+      display: inline-flex;
+      background: #e8eeeb;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+
+    .tabs button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 12px;
+      border-radius: 6px;
+      min-width: 112px;
+    }
+
+    .tabs button.active {
+      background: var(--panel);
+      color: var(--ink);
+      box-shadow: 0 1px 4px rgba(23, 33, 28, 0.08);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .control {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 8px 10px;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .panel-header span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .recommendation-list {
+      display: grid;
+    }
+
+    .rec-row {
+      display: grid;
+      grid-template-columns: 78px 132px 92px 1fr 1fr 105px 132px;
+      gap: 12px;
+      align-items: center;
+      width: 100%;
+      min-height: 92px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      text-align: left;
+      padding: 14px 16px;
+    }
+
+    .rec-row:last-child {
+      border-bottom: 0;
+    }
+
+    .rec-row:hover,
+    .rec-row:focus-visible {
+      background: #f8fbf9;
+      outline: 2px solid rgba(31, 122, 85, 0.25);
+      outline-offset: -2px;
+    }
+
+    .rec-row.warning {
+      background: linear-gradient(90deg, var(--warning-soft), var(--panel) 26%);
+    }
+
+    .rec-row.danger {
+      background: linear-gradient(90deg, var(--danger-soft), var(--panel) 26%);
+    }
+
+    .ticker {
+      display: grid;
+      gap: 4px;
+    }
+
+    .ticker strong {
+      font-size: 18px;
+    }
+
+    .ticker span,
+    .metric span,
+    .setup span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .setup strong,
+    .metric strong {
+      display: block;
+      font-size: 14px;
+      margin-top: 3px;
+    }
+
+    .score {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      color: #135b3c;
+      border: 1px solid #b9decf;
+      font-weight: 800;
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #b9decf;
+      background: var(--accent-soft);
+      color: #135b3c;
+      white-space: nowrap;
+    }
+
+    .risk-badge.warning {
+      border-color: #f0c27b;
+      background: var(--warning-soft);
+      color: #74400a;
+    }
+
+    .risk-badge.danger {
+      border-color: #f2aaaa;
+      background: var(--danger-soft);
+      color: #842525;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .summary {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 11px;
+    }
+
+    .summary-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .summary-item span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .summary-item strong {
+      text-align: right;
+      font-size: 14px;
+    }
+
+    .callout {
+      margin: 0;
+      padding: 14px 16px;
+      color: #503008;
+      background: var(--warning-soft);
+      border-top: 1px solid #f0c27b;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .history-list {
+      display: grid;
+    }
+
+    .history-row {
+      grid-template-columns: 86px 76px 118px 84px 1fr 108px 132px 124px;
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(19, 36, 28, 0.22);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+      z-index: 10;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(620px, 100vw);
+      height: 100vh;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      transform: translateX(102%);
+      transition: transform 220ms ease;
+      z-index: 11;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    body.drawer-open .drawer-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    body.drawer-open .drawer {
+      transform: translateX(0);
+    }
+
+    .drawer-head {
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    .drawer-title {
+      display: grid;
+      gap: 8px;
+    }
+
+    .drawer-title h2 {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    .drawer-title p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 14px;
+    }
+
+    .close-btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      width: 38px;
+      height: 38px;
+      color: var(--ink);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .drawer-body {
+      padding: 20px 22px 28px;
+      overflow: auto;
+      display: grid;
+      gap: 18px;
+    }
+
+    .detail-section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .detail-section h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .detail-section p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .detail-metric {
+      background: #f7faf8;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      min-height: 74px;
+    }
+
+    .detail-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .detail-metric strong {
+      font-size: 15px;
+    }
+
+    .evidence-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 1160px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .rec-row {
+        grid-template-columns: 80px 120px 80px 1fr 1fr 100px 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <strong>AlphaMomentum</strong>
+        <span>Daily momentum recommendations with visible risk context.</span>
+      </div>
+      <nav class="nav">
+        <button class="active" type="button">Dashboard</button>
+        <button type="button">Recommendation History</button>
+        <button type="button">Pipeline Status</button>
+        <button type="button">Settings</button>
+      </nav>
+      <p class="sidebar-note">Prototype only. Recommendations are educational and informational, not personalized financial advice.</p>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <h1>Today's Top 5</h1>
+          <p class="subtitle">Curated momentum setups for Thursday, Apr 30, 2026. Review the setup, risk, and invalidation before acting.</p>
+        </div>
+        <div class="status-strip" aria-label="System status">
+          <span class="pill"><span class="dot"></span> Data fresh: 7:42 AM ET</span>
+          <span class="pill"><span class="dot info"></span> 5 recommendations published</span>
+          <span class="pill"><span class="dot warning"></span> 2 need closer review</span>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <div class="tabs" role="tablist" aria-label="Recommendation views">
+          <button class="active" id="todayTab" type="button" role="tab" aria-selected="true">Today</button>
+          <button id="historyTab" type="button" role="tab" aria-selected="false">Last 2 Weeks</button>
+        </div>
+        <div class="controls">
+          <select class="control" id="riskFilter" aria-label="Filter by risk">
+            <option value="all">All risk states</option>
+            <option value="clear">Clear only</option>
+            <option value="warning">Warnings</option>
+            <option value="danger">Invalidation risk</option>
+          </select>
+          <input class="control" id="searchBox" type="search" placeholder="Search ticker" aria-label="Search ticker">
+        </div>
+      </div>
+
+      <section class="content-grid">
+        <div class="panel" id="todayPanel">
+          <div class="panel-header">
+            <div>
+              <h2>Daily Recommendations</h2>
+              <span>Click a row to inspect the setup in a sliding panel.</span>
+            </div>
+            <span id="resultCount">5 shown</span>
+          </div>
+          <div class="recommendation-list" id="recommendationList"></div>
+        </div>
+
+        <div class="panel hidden" id="historyPanel">
+          <div class="panel-header">
+            <div>
+              <h2>Last 2 Weeks</h2>
+              <span>Recent recommendations, outcomes, and warning patterns.</span>
+            </div>
+          </div>
+          <div class="history-list" id="historyGrid"></div>
+        </div>
+
+        <aside class="side-stack">
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Run Summary</h2>
+              <span>Daily scan</span>
+            </div>
+            <div class="summary">
+              <div class="summary-item"><span>Universe scanned</span><strong>4,812 symbols</strong></div>
+              <div class="summary-item"><span>Passed liquidity gate</span><strong>713</strong></div>
+              <div class="summary-item"><span>Passed momentum gate</span><strong>31</strong></div>
+              <div class="summary-item"><span>Final published</span><strong>5</strong></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Risk Notes</h2>
+              <span>Review first</span>
+            </div>
+            <p class="callout">Risk highlights are intentionally visible. A warning does not mean the setup is unusable; it means the user should inspect invalidation, freshness, and event context before deciding what to study.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="detailDrawer" aria-label="Recommendation details" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="drawer-title">
+        <h2 id="drawerTicker">AAPL</h2>
+        <p id="drawerSummary">Recommendation details</p>
+        <div id="drawerBadges"></div>
+      </div>
+      <button class="close-btn" id="closeDrawer" type="button" aria-label="Close details">&times;</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+
+  <script>
+    const recommendations = [
+      {
+        ticker: "NVDA",
+        name: "Nvidia",
+        setup: "Breakout",
+        score: 88,
+        entry: "$875.20 - $884.40",
+        stop: "$842.10",
+        target: "$934.80",
+        rr: "1:1.7",
+        trend: "Strong",
+        sentiment: "Bullish",
+        risk: "clear",
+        riskLabel: "Clear",
+        freshness: "Fresh",
+        summary: "Breakout with relative volume expansion and strong trend confirmation.",
+        why: "NVDA passed the liquidity, trend, RSI, ADX, and relative volume gates. Price is holding above EMA50 with EMA50 above EMA200.",
+        invalidation: "Close below $842.10 or loss of EMA50 trend confirmation.",
+        evidence: ["Relative volume: 2.7x", "RSI: 68", "ADX: 31", "Price above EMA50 and EMA200"],
+        warning: "No active warning. Continue to review position risk before using the idea."
+      },
+      {
+        ticker: "AMD",
+        name: "Advanced Micro Devices",
+        setup: "Pullback",
+        score: 81,
+        entry: "$149.80 - $152.30",
+        stop: "$143.20",
+        target: "$162.40",
+        rr: "1:1.5",
+        trend: "Strong",
+        sentiment: "Warning",
+        risk: "warning",
+        riskLabel: "Sentiment Warning",
+        freshness: "Fresh",
+        summary: "Pullback into the entry zone while trend remains constructive.",
+        why: "AMD retains trend alignment and volume support, but options sentiment is less supportive than the broader setup.",
+        invalidation: "Close below $143.20 or Put/Call ratio staying above warning threshold for two sessions.",
+        evidence: ["Relative volume: 2.1x", "RSI: 62", "ADX: 27", "Put/Call ratio: 1.24"],
+        warning: "Options sentiment is elevated. Inspect the risk plan before considering this setup."
+      },
+      {
+        ticker: "MSFT",
+        name: "Microsoft",
+        setup: "Continuation",
+        score: 79,
+        entry: "$421.50 - $425.80",
+        stop: "$411.90",
+        target: "$439.90",
+        rr: "1:1.6",
+        trend: "Strong",
+        sentiment: "Neutral",
+        risk: "clear",
+        riskLabel: "Clear",
+        freshness: "Fresh",
+        summary: "Continuation setup with smooth momentum and moderate volatility.",
+        why: "MSFT shows constructive price action above major moving averages with manageable volatility.",
+        invalidation: "Close below $411.90 or failed continuation above the entry zone.",
+        evidence: ["Six-month price strength: positive", "RSI: 64", "ADX: 26", "Volatility: moderate"],
+        warning: "No active warning. Review risk/reward and invalidation."
+      },
+      {
+        ticker: "SHOP",
+        name: "Shopify",
+        setup: "Breakout",
+        score: 74,
+        entry: "$78.40 - $79.60",
+        stop: "$74.10",
+        target: "$85.80",
+        rr: "1:1.4",
+        trend: "Neutral",
+        sentiment: "Unavailable",
+        risk: "warning",
+        riskLabel: "Sentiment Unavailable",
+        freshness: "Fresh",
+        summary: "Breakout candidate, but sentiment data is unavailable for this run.",
+        why: "SHOP passed technical momentum gates, though missing sentiment requires extra caution.",
+        invalidation: "Close below $74.10 or relative volume falling under confirmation threshold.",
+        evidence: ["Relative volume: 2.4x", "RSI: 66", "ADX: 25", "Put/Call ratio unavailable"],
+        warning: "Sentiment is unavailable. Treat the score as technical-only."
+      },
+      {
+        ticker: "TSLA",
+        name: "Tesla",
+        setup: "Breakout",
+        score: 69,
+        entry: "$181.20 - $184.90",
+        stop: "$172.80",
+        target: "$197.40",
+        rr: "1:1.5",
+        trend: "Neutral",
+        sentiment: "Warning",
+        risk: "danger",
+        riskLabel: "Invalidation Risk",
+        freshness: "Fresh",
+        summary: "High-interest setup with elevated event and sentiment risk.",
+        why: "TSLA passed several momentum screens, but the setup has weaker trend quality and elevated risk context.",
+        invalidation: "Close below $172.80, failed breakout follow-through, or event-risk deterioration.",
+        evidence: ["Relative volume: 2.9x", "RSI: 72", "ADX: 25", "Event risk elevated"],
+        warning: "Risk is elevated. This recommendation should be reviewed carefully before any decision."
+      }
+    ];
+
+    const history = [
+      {
+        id: "h-avgo-0429",
+        date: "Apr 29",
+        ticker: "AVGO",
+        name: "Broadcom",
+        setup: "Continuation",
+        score: 84,
+        entry: "$1,284 - $1,296",
+        stop: "$1,246",
+        target: "$1,355",
+        rr: "1:1.6",
+        trend: "Strong",
+        sentiment: "Bullish",
+        risk: "clear",
+        riskLabel: "Clear",
+        freshness: "Archived",
+        outcome: "Active",
+        summary: "Prior continuation setup that remains active after holding the entry zone.",
+        why: "AVGO showed trend alignment and clean volume support in the prior run.",
+        invalidation: "Close below $1,246 or loss of trend confirmation.",
+        evidence: ["Relative volume: 2.3x", "RSI: 65", "ADX: 29", "Held above entry zone"],
+        warning: "No active warning in the archived review."
+      },
+      {
+        id: "h-amd-0428",
+        date: "Apr 28",
+        ticker: "AMD",
+        name: "Advanced Micro Devices",
+        setup: "Pullback",
+        score: 78,
+        entry: "$146.20 - $149.00",
+        stop: "$139.90",
+        target: "$158.80",
+        rr: "1:1.5",
+        trend: "Strong",
+        sentiment: "Warning",
+        risk: "warning",
+        riskLabel: "Sentiment Warning",
+        freshness: "Archived",
+        outcome: "Watching",
+        summary: "Archived pullback setup with sentiment still worth reviewing.",
+        why: "AMD retained trend structure, but options sentiment reduced conviction.",
+        invalidation: "Close below $139.90 or persistent bearish Put/Call reading.",
+        evidence: ["Relative volume: 2.0x", "RSI: 61", "ADX: 26", "Put/Call ratio above preferred range"],
+        warning: "Past warning remained relevant during review."
+      },
+      {
+        id: "h-shop-0428",
+        date: "Apr 28",
+        ticker: "SHOP",
+        name: "Shopify",
+        setup: "Breakout",
+        score: 73,
+        entry: "$76.90 - $78.20",
+        stop: "$72.80",
+        target: "$84.10",
+        rr: "1:1.4",
+        trend: "Neutral",
+        sentiment: "Unavailable",
+        risk: "danger",
+        riskLabel: "Invalidated",
+        freshness: "Archived",
+        outcome: "Invalidated",
+        summary: "Prior breakout setup invalidated after failing to hold the entry zone.",
+        why: "The original setup passed technical gates, but follow-through failed after publication.",
+        invalidation: "Setup invalidated by close below $72.80.",
+        evidence: ["Entry zone failed", "Relative volume faded", "Sentiment unavailable", "Stop threshold breached"],
+        warning: "This is a learning example: failed follow-through invalidated the setup."
+      },
+      {
+        id: "h-msft-0425",
+        date: "Apr 25",
+        ticker: "MSFT",
+        name: "Microsoft",
+        setup: "Continuation",
+        score: 82,
+        entry: "$417.80 - $421.60",
+        stop: "$408.40",
+        target: "$435.70",
+        rr: "1:1.6",
+        trend: "Strong",
+        sentiment: "Neutral",
+        risk: "clear",
+        riskLabel: "Target Hit",
+        freshness: "Archived",
+        outcome: "Target Hit",
+        summary: "Archived continuation idea that reached its first target.",
+        why: "MSFT showed steady trend quality and low volatility relative to other candidates.",
+        invalidation: "Original invalidation was close below $408.40.",
+        evidence: ["Target reached", "RSI stayed in range", "ADX: 28", "Trend alignment persisted"],
+        warning: "Outcome is historical and should be used for review, not prediction."
+      },
+      {
+        id: "h-tsla-0425",
+        date: "Apr 25",
+        ticker: "TSLA",
+        name: "Tesla",
+        setup: "Breakout",
+        score: 68,
+        entry: "$176.40 - $179.20",
+        stop: "$168.70",
+        target: "$191.80",
+        rr: "1:1.5",
+        trend: "Neutral",
+        sentiment: "Warning",
+        risk: "warning",
+        riskLabel: "Event Risk",
+        freshness: "Archived",
+        outcome: "Warning",
+        summary: "Archived setup flagged for elevated event and sentiment risk.",
+        why: "TSLA had high relative volume, but the setup carried more uncertainty than higher-ranked ideas.",
+        invalidation: "Close below $168.70 or event-risk deterioration.",
+        evidence: ["Relative volume: 3.1x", "RSI: 71", "Event risk elevated", "Options sentiment warning"],
+        warning: "Past setup carried elevated risk and was marked for careful review."
+      },
+      {
+        id: "h-crm-0424",
+        date: "Apr 24",
+        ticker: "CRM",
+        name: "Salesforce",
+        setup: "Pullback",
+        score: 76,
+        entry: "$286.40 - $289.10",
+        stop: "$278.20",
+        target: "$301.60",
+        rr: "1:1.5",
+        trend: "Strong",
+        sentiment: "Bullish",
+        risk: "clear",
+        riskLabel: "Active",
+        freshness: "Archived",
+        outcome: "Active",
+        summary: "Prior pullback setup still active in the two-week review window.",
+        why: "CRM pulled back into the preferred entry area while maintaining trend alignment.",
+        invalidation: "Close below $278.20 or failed recovery from entry zone.",
+        evidence: ["EMA50 > EMA200", "RSI: 63", "ADX: 27", "Bullish sentiment"],
+        warning: "No archived warning."
+      }
+    ];
+
+    const list = document.getElementById("recommendationList");
+    const count = document.getElementById("resultCount");
+    const search = document.getElementById("searchBox");
+    const riskFilter = document.getElementById("riskFilter");
+    const todayTab = document.getElementById("todayTab");
+    const historyTab = document.getElementById("historyTab");
+    const todayPanel = document.getElementById("todayPanel");
+    const historyPanel = document.getElementById("historyPanel");
+    const historyGrid = document.getElementById("historyGrid");
+    const drawer = document.getElementById("detailDrawer");
+    const backdrop = document.getElementById("drawerBackdrop");
+    const closeDrawer = document.getElementById("closeDrawer");
+    let lastFocused = null;
+
+    function riskClass(risk) {
+      if (risk === "danger") return "danger";
+      if (risk === "warning") return "warning";
+      return "";
+    }
+
+    function renderRecommendations() {
+      const query = search.value.trim().toLowerCase();
+      const risk = riskFilter.value;
+      const filtered = recommendations.filter((rec) => {
+        const matchesSearch = !query || rec.ticker.toLowerCase().includes(query) || rec.name.toLowerCase().includes(query);
+        const matchesRisk = risk === "all" || rec.risk === risk;
+        return matchesSearch && matchesRisk;
+      });
+
+      list.innerHTML = filtered.map((rec) => `
+        <button class="rec-row ${riskClass(rec.risk)}" type="button" data-ticker="${rec.ticker}">
+          <span class="ticker"><strong>${rec.ticker}</strong><span>${rec.name}</span></span>
+          <span class="setup"><span>Setup</span><strong>${rec.setup}</strong></span>
+          <span class="score" aria-label="Score ${rec.score}">${rec.score}</span>
+          <span class="metric"><span>Entry Zone</span><strong>${rec.entry}</strong></span>
+          <span class="metric"><span>Stop / Target</span><strong>${rec.stop} / ${rec.target}</strong></span>
+          <span class="metric"><span>Risk/Reward</span><strong>${rec.rr}</strong></span>
+          <span class="risk-badge ${riskClass(rec.risk)}">${rec.riskLabel}</span>
+        </button>
+      `).join("");
+
+      count.textContent = `${filtered.length} shown`;
+      list.querySelectorAll(".rec-row").forEach((row) => {
+        row.addEventListener("click", () => openDetails(row.dataset.ticker, row));
+      });
+    }
+
+    function renderHistory() {
+      const query = search.value.trim().toLowerCase();
+      const risk = riskFilter.value;
+      const filtered = history.filter((rec) => {
+        const matchesSearch = !query || rec.ticker.toLowerCase().includes(query) || rec.name.toLowerCase().includes(query);
+        const matchesRisk = risk === "all" || rec.risk === risk;
+        return matchesSearch && matchesRisk;
+      });
+
+      historyGrid.innerHTML = filtered.map((rec) => `
+        <button class="rec-row history-row ${riskClass(rec.risk)}" type="button" data-id="${rec.id}">
+          <span class="ticker"><strong>${rec.date}</strong><span>${rec.outcome}</span></span>
+          <span class="ticker"><strong>${rec.ticker}</strong><span>${rec.name}</span></span>
+          <span class="setup"><span>Setup</span><strong>${rec.setup}</strong></span>
+          <span class="score" aria-label="Score ${rec.score}">${rec.score}</span>
+          <span class="metric"><span>Entry Zone</span><strong>${rec.entry}</strong></span>
+          <span class="metric"><span>Result</span><strong>${rec.outcome}</strong></span>
+          <span class="risk-badge ${riskClass(rec.risk)}">${rec.riskLabel}</span>
+          <span class="metric"><span>Status</span><strong>${rec.freshness}</strong></span>
+        </button>
+      `).join("");
+      historyGrid.querySelectorAll(".history-row").forEach((row) => {
+        row.addEventListener("click", () => openDetails(row.dataset.id, row));
+      });
+    }
+
+    function openDetails(identifier, trigger) {
+      const rec = recommendations.find((item) => item.ticker === identifier) || history.find((item) => item.id === identifier);
+      if (!rec) return;
+      lastFocused = trigger;
+
+      document.getElementById("drawerTicker").textContent = `${rec.ticker} - ${rec.name}`;
+      document.getElementById("drawerSummary").textContent = rec.summary;
+      document.getElementById("drawerBadges").innerHTML = `
+        <span class="risk-badge ${riskClass(rec.risk)}">${rec.riskLabel}</span>
+        <span class="pill"><span class="dot ${rec.risk === "clear" ? "" : riskClass(rec.risk)}"></span>${rec.freshness}</span>
+      `;
+      document.getElementById("drawerBody").innerHTML = `
+        <section class="detail-section">
+          <h3>Trade Plan</h3>
+          <div class="detail-grid">
+            <div class="detail-metric"><span>Entry Zone</span><strong>${rec.entry}</strong></div>
+            <div class="detail-metric"><span>Stop Loss</span><strong>${rec.stop}</strong></div>
+            <div class="detail-metric"><span>Target 1</span><strong>${rec.target}</strong></div>
+            <div class="detail-metric"><span>Risk/Reward</span><strong>${rec.rr}</strong></div>
+            <div class="detail-metric"><span>Trend</span><strong>${rec.trend}</strong></div>
+            <div class="detail-metric"><span>Sentiment</span><strong>${rec.sentiment}</strong></div>
+          </div>
+        </section>
+        <section class="detail-section">
+          <h3>Why This Recommendation</h3>
+          <p>${rec.why}</p>
+        </section>
+        <section class="detail-section">
+          <h3>Evidence</h3>
+          <ul class="evidence-list">${rec.evidence.map((item) => `<li>${item}</li>`).join("")}</ul>
+        </section>
+        <section class="detail-section">
+          <h3>Risk And Invalidation</h3>
+          <p>${rec.invalidation}</p>
+          <p><strong>${rec.warning}</strong></p>
+        </section>
+      `;
+
+      document.body.classList.add("drawer-open");
+      drawer.setAttribute("aria-hidden", "false");
+      closeDrawer.focus();
+    }
+
+    function closeDetails() {
+      document.body.classList.remove("drawer-open");
+      drawer.setAttribute("aria-hidden", "true");
+      if (lastFocused) lastFocused.focus();
+    }
+
+    todayTab.addEventListener("click", () => {
+      todayTab.classList.add("active");
+      historyTab.classList.remove("active");
+      todayTab.setAttribute("aria-selected", "true");
+      historyTab.setAttribute("aria-selected", "false");
+      todayPanel.classList.remove("hidden");
+      historyPanel.classList.add("hidden");
+    });
+
+    historyTab.addEventListener("click", () => {
+      historyTab.classList.add("active");
+      todayTab.classList.remove("active");
+      historyTab.setAttribute("aria-selected", "true");
+      todayTab.setAttribute("aria-selected", "false");
+      historyPanel.classList.remove("hidden");
+      todayPanel.classList.add("hidden");
+    });
+
+    search.addEventListener("input", () => {
+      renderRecommendations();
+      renderHistory();
+    });
+    riskFilter.addEventListener("change", () => {
+      renderRecommendations();
+      renderHistory();
+    });
+    closeDrawer.addEventListener("click", closeDetails);
+    backdrop.addEventListener("click", closeDetails);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeDetails();
+    });
+
+    renderRecommendations();
+    renderHistory();
+  </script>
+</body>
+</html>
