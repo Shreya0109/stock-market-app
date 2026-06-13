@@ -46,18 +46,35 @@ def _ensure_sqlite_schema_compatibility():
         return
 
     inspector = inspect(engine)
-    if "symbols" not in inspector.get_table_names():
+    table_names = inspector.get_table_names()
+    if "symbols" not in table_names:
         return
 
-    existing_columns = {column["name"] for column in inspector.get_columns("symbols")}
-    migrations = {
+    existing_symbol_columns = {column["name"] for column in inspector.get_columns("symbols")}
+    symbol_migrations = {
         "last_close": "ALTER TABLE symbols ADD COLUMN last_close FLOAT",
         "metadata_updated_at": "ALTER TABLE symbols ADD COLUMN metadata_updated_at DATETIME",
     }
     with engine.begin() as connection:
-        for column_name, statement in migrations.items():
-            if column_name not in existing_columns:
+        for column_name, statement in symbol_migrations.items():
+            if column_name not in existing_symbol_columns:
                 logger.info("Adding missing SQLite column symbols.%s", column_name)
+                connection.execute(text(statement))
+
+    if "indicator_values" not in table_names:
+        return
+
+    existing_indicator_columns = {column["name"] for column in inspector.get_columns("indicator_values")}
+    indicator_migrations = {
+        "breakout_high_20": "ALTER TABLE indicator_values ADD COLUMN breakout_high_20 FLOAT",
+        "breakout_low_20": "ALTER TABLE indicator_values ADD COLUMN breakout_low_20 FLOAT",
+        "ineligible_reason": "ALTER TABLE indicator_values ADD COLUMN ineligible_reason TEXT",
+        "updated_at": "ALTER TABLE indicator_values ADD COLUMN updated_at DATETIME",
+    }
+    with engine.begin() as connection:
+        for column_name, statement in indicator_migrations.items():
+            if column_name not in existing_indicator_columns:
+                logger.info("Adding missing SQLite column indicator_values.%s", column_name)
                 connection.execute(text(statement))
 
 

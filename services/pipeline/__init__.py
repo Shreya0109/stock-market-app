@@ -1,5 +1,9 @@
 """Market data ingestion and freshness pipeline."""
 
+from services.pipeline.indicators import (
+    IndicatorComputationResult,
+    compute_and_persist_indicators,
+)
 from services.pipeline.market_data import (
     FreshnessReport,
     IngestionResult,
@@ -11,7 +15,9 @@ from services.pipeline.market_data import (
 
 __all__ = [
     "FreshnessReport",
+    "IndicatorComputationResult",
     "IngestionResult",
+    "compute_and_persist_indicators",
     "load_symbol_universe",
     "ingest_market_data",
     "run_market_data_pipeline",

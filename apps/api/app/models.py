@@ -65,7 +65,15 @@ class IndicatorValue(Base):
     adx = Column(Float, nullable=True)
     atr_14 = Column(Float, nullable=True)
     relative_volume = Column(Float, nullable=True)
+    breakout_high_20 = Column(Float, nullable=True)
+    breakout_low_20 = Column(Float, nullable=True)
+    ineligible_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
+
+    __table_args__ = (
+        UniqueConstraint("symbol", "date", name="uq_indicator_values_symbol_date"),
+    )
 
 
 class Recommendation(Base):
