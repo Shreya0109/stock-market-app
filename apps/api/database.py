@@ -34,6 +34,9 @@ Base = declarative_base()
 
 def init_db():
     """Initialize database tables."""
+    # Import ORM models before create_all so SQLAlchemy metadata is populated.
+    from apps.api.app import models as _models  # noqa: F401
+
     logger.info(f"Creating database tables (Database: {DATABASE_URL})...")
     Base.metadata.create_all(bind=engine)
     _ensure_sqlite_schema_compatibility()
