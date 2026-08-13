@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Iterable
@@ -21,6 +22,8 @@ from services.indicators import (
     calculate_rsi,
 )
 from services.pipeline.market_data import load_symbol_universe
+
+logger = logging.getLogger(__name__)
 
 EMA_PERIODS = (9, 21, 50, 200)
 ATR_PERIOD = 14
@@ -56,29 +59,37 @@ def compute_and_persist_indicators(
 
     for symbol in active_symbols:
         normalized_symbol = symbol.upper()
-        bars = _load_bars(db, normalized_symbol)
-        if len(bars) < MIN_REQUIRED_BARS:
-            result.ineligible[normalized_symbol] = (
-                f"insufficient OHLCV history: {len(bars)} bars available, {MIN_REQUIRED_BARS} required"
-            )
-            _mark_latest_ineligible(db, normalized_symbol, bars, result.ineligible[normalized_symbol], result)
-            continue
+        bars: list[DailyBar] = []
+        try:
+            bars = _load_bars(db, normalized_symbol)
+            if len(bars) < MIN_REQUIRED_BARS:
+                reason = _insufficient_history_reason(len(bars))
+                result.ineligible[normalized_symbol] = reason
+                _mark_latest_ineligible(db, normalized_symbol, bars, reason, result)
+                continue
 
-        frame = _bars_to_frame(bars)
-        indicator_frame = _compute_indicator_frame(frame)
-        latest_valid = indicator_frame.dropna(subset=["ema_200", "atr_14", "rsi", "adx", "relative_volume"])
-        if latest_valid.empty:
-            result.ineligible[normalized_symbol] = "indicator computation produced no complete rows"
-            _mark_latest_ineligible(db, normalized_symbol, bars, result.ineligible[normalized_symbol], result)
-            continue
+            frame = _bars_to_frame(bars)
+            _validate_ema_and_atr_inputs(frame)
+            indicator_frame = _compute_indicator_frame(frame)
+            latest_valid = indicator_frame.dropna(subset=["ema_200", "atr_14", "rsi", "adx", "relative_volume"])
+            if latest_valid.empty:
+                reason = "indicator computation produced no complete rows"
+                result.ineligible[normalized_symbol] = reason
+                _mark_latest_ineligible(db, normalized_symbol, bars, reason, result)
+                continue
 
-        for row in indicator_frame.itertuples(index=False):
-            inserted = _upsert_indicator_value(db, normalized_symbol, row)
-            if inserted:
-                result.rows_inserted += 1
-            else:
-                result.rows_updated += 1
-        result.symbols_processed += 1
+            for row in indicator_frame.itertuples(index=False):
+                inserted = _upsert_indicator_value(db, normalized_symbol, row)
+                if inserted:
+                    result.rows_inserted += 1
+                else:
+                    result.rows_updated += 1
+            result.symbols_processed += 1
+        except Exception as exc:
+            reason = f"indicator computation unavailable: {exc}"
+            result.ineligible[normalized_symbol] = reason
+            _mark_latest_ineligible(db, normalized_symbol, bars, reason, result)
+            logger.exception("Indicator computation failed for %s", normalized_symbol)
 
     db.commit()
     return result
@@ -107,6 +118,35 @@ def _bars_to_frame(bars: list[DailyBar]) -> pd.DataFrame:
             for bar in bars
         ]
     )
+
+
+def _insufficient_history_reason(bar_count: int) -> str:
+    unavailable = [f"EMA{period}" for period in EMA_PERIODS if bar_count < period]
+    if bar_count < ATR_PERIOD:
+        unavailable.append(f"ATR{ATR_PERIOD}")
+    return (
+        f"insufficient OHLCV history for {', '.join(unavailable)}: "
+        f"{bar_count} bars available, {MIN_REQUIRED_BARS} required"
+    )
+
+
+def _validate_ema_and_atr_inputs(frame: pd.DataFrame) -> None:
+    """Reject invalid source prices before pandas can turn them into misleading values."""
+    invalid_fields = [
+        field_name
+        for field_name in ("high", "low", "close")
+        if not pd.api.types.is_numeric_dtype(frame[field_name])
+        or not frame[field_name].map(_is_finite_number).all()
+    ]
+    if invalid_fields:
+        raise ValueError(f"EMA/ATR unavailable: invalid OHLCV fields {', '.join(invalid_fields)}")
+
+
+def _is_finite_number(value: object) -> bool:
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
 
 
 def _compute_indicator_frame(frame: pd.DataFrame) -> pd.DataFrame:

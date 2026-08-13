@@ -1,6 +1,6 @@
 # AlphaMomentum Project Flow And File Map
 
-Last reviewed: 2026-06-07
+Last reviewed: 2026-07-09
 
 This document explains how the application currently runs, how data moves through it, how to build and test it, and what each meaningful project file does.
 
@@ -19,9 +19,29 @@ The intended product flow is:
 
 Current implementation status:
 
-- Implemented: FastAPI app, health endpoint, SQLite models, market-data provider abstraction, mock provider, Yahoo Finance provider, symbol universe file, market-data ingestion, freshness validation, pipeline status/run endpoints, scheduled pipeline job, Next.js dashboard shell, backend tests.
-- Partially implemented: indicators, liquidity/momentum gates, MQS scoring, recommendation card UI.
-- Not yet implemented: actual recommendation generation endpoint at `/api/recommendations/today`, full indicator persistence pipeline, candidate ranking pipeline, recommendation publishing flow, frontend tests.
+- Implemented: FastAPI app, health endpoint, SQLite models, market-data provider abstraction, mock provider, Yahoo Finance provider, symbol universe file, market-data ingestion, freshness validation, pipeline status/run endpoints, scheduled pipeline job, indicator computation/persistence pipeline, recommendation evidence/feedback/source config models, Next.js dashboard shell, backend tests.
+- Partially implemented: liquidity/momentum gates, MQS scoring, recommendation card UI, recommendation storage schema.
+- Not yet implemented: actual recommendation generation endpoint at `/api/recommendations/today`, candidate ranking pipeline, recommendation publishing flow, frontend tests.
+
+## 1.1 Recent Commit Update
+
+Recent commits reviewed:
+
+- `bfbef52` - Epic 2 started: added the SQLite-backed market-data pipeline, provider abstraction, Yahoo/mock provider support, symbol universe config, freshness validation, pipeline status/run API routes, scheduler registration, and market-data pipeline tests.
+- `30d0230` - starting with Epic 3: added indicator computation/persistence, EMA/ATR/RSI/ADX/relative-volume/breakout helpers, indicator pipeline tests, and connected indicator computation after successful market-data ingestion.
+- `61a4442` - updating the database & models: expanded recommendation-side persistence with recommendation evidence, recommendation feedback, source config models, SQLite compatibility migration updates, and relationship tests.
+
+Epic 2 status:
+
+- Epic 2 is complete enough for the MVP foundation. The project can load the configured symbol universe, fetch OHLCV/metadata through a provider, persist normalized rows, validate freshness/completeness, expose pipeline run/status endpoints, and block readiness when data is missing, stale, or incomplete.
+- Current verification: `pytest apps/api/tests` passes with `11 passed`.
+- Remaining caveat: this is still local MVP persistence. The checked-in `alphamomentum.db` currently has the expected tables but no rows in `symbols`, `daily_bars`, `indicator_values`, `recommendations`, or `pipeline_runs` until the pipeline is run locally.
+
+Epic 3 status:
+
+- Epic 3 has started and has the first implementation slice in place. Indicator calculation and persistence exists for EMA9, EMA21, EMA50, EMA200, ATR14, RSI, ADX, relative volume, and 20-period breakout high/low.
+- The pipeline records ineligible symbols when there is insufficient OHLCV history. It currently requires enough history for the longest lookback, especially EMA200.
+- Epic 3 is not fully complete until the indicator outputs are reviewed against known fixtures/market examples and the downstream gates know how to consume missing or ineligible indicator states.
 
 ## 2. Local Runtime Flow
 
@@ -125,6 +145,9 @@ Tests covered:
 - Freshness blocks missing data.
 - Freshness passes after complete ingestion.
 - Freshness blocks stale OHLCV data.
+- Indicator computation persists EMA, ATR, RSI, ADX, relative volume, and breakout values idempotently.
+- Insufficient indicator history is persisted as an ineligible state.
+- Recommendation evidence, recommendation feedback, and source config models persist and query correctly.
 
 ### Frontend Development
 
@@ -225,8 +248,11 @@ ORM tables:
 
 - `symbols`: one row per tradable equity symbol and its metadata.
 - `daily_bars`: normalized OHLCV bars; uniqueness is symbol/date.
-- `indicator_values`: planned persisted indicators.
+- `indicator_values`: persisted indicators and ineligible reasons; uniqueness is symbol/date.
 - `recommendations`: planned daily recommendation records.
+- `recommendation_evidence`: auditable rules/evidence linked to recommendations.
+- `recommendation_feedback`: user feedback linked to recommendations.
+- `source_configs`: provider/source configuration metadata for future source selection.
 - `pipeline_runs`: pipeline execution status, timing, counts, and error/block reasons.
 
 Current persistence path:
@@ -238,6 +264,70 @@ Yahoo/mock provider
   -> SQLAlchemy models
   -> SQLite alphamomentum.db
 ```
+
+Indicator persistence path:
+
+```text
+daily_bars
+  -> services.pipeline.indicators.compute_and_persist_indicators()
+  -> services.indicators calculation helpers
+  -> indicator_values
+```
+
+How to read the local SQLite data:
+
+```bash
+cd /home/shubhankar/stock-market-app
+sqlite3 alphamomentum.db
+```
+
+Useful commands inside the `sqlite3` prompt:
+
+```sql
+.tables
+.schema symbols
+.schema daily_bars
+.schema indicator_values
+.headers on
+.mode column
+SELECT COUNT(*) FROM symbols;
+SELECT * FROM symbols LIMIT 10;
+SELECT symbol, date, close, volume FROM daily_bars ORDER BY date DESC LIMIT 10;
+SELECT symbol, date, ema_9, ema_21, ema_50, ema_200, rsi, adx, atr_14, relative_volume, ineligible_reason
+FROM indicator_values
+ORDER BY date DESC
+LIMIT 10;
+.quit
+```
+
+One-shot command examples:
+
+```bash
+sqlite3 alphamomentum.db ".tables"
+sqlite3 alphamomentum.db "SELECT COUNT(*) FROM daily_bars;"
+sqlite3 -header -column alphamomentum.db "SELECT symbol, date, close FROM daily_bars ORDER BY date DESC LIMIT 10;"
+```
+
+Python/SQLAlchemy read example:
+
+```python
+from apps.api.database import SessionLocal
+from apps.api.app.models import DailyBar, IndicatorValue, Symbol
+
+db = SessionLocal()
+try:
+    symbols = db.query(Symbol).order_by(Symbol.symbol).all()
+    latest_bars = db.query(DailyBar).order_by(DailyBar.date.desc()).limit(10).all()
+    latest_indicators = db.query(IndicatorValue).order_by(IndicatorValue.date.desc()).limit(10).all()
+finally:
+    db.close()
+```
+
+Database recommendation as of this review:
+
+- Stay on SQLite for now. It is enough for local MVP development, deterministic tests, and single-operator pipeline runs.
+- Do not migrate just because the planning docs mention PostgreSQL. Migrate when the app needs shared multi-user state, hosted deployment with durable backups, concurrent writers, stronger migration discipline, or production-like operations.
+- Near-term improvement: stop committing `alphamomentum.db` as source if the team wants clean diffs. Keep schema in SQLAlchemy/Alembic and let the local DB be regenerated.
 
 ## 6. Web Flow
 
@@ -315,7 +405,7 @@ What the frontend currently shows:
 `apps/api/app/models.py`
 
 - SQLAlchemy ORM models.
-- Defines `Symbol`, `DailyBar`, `IndicatorValue`, `Recommendation`, and `PipelineRun`.
+- Defines `Symbol`, `DailyBar`, `IndicatorValue`, `Recommendation`, `RecommendationEvidence`, `RecommendationFeedback`, `SourceConfig`, and `PipelineRun`.
 - Also defines `utc_now_naive()` for timestamp defaults.
 
 `apps/api/app/__init__.py`
@@ -327,7 +417,7 @@ What the frontend currently shows:
 - Creates SQLAlchemy engine and session factory.
 - Defaults to SQLite at `sqlite:///./alphamomentum.db`.
 - Exposes `init_db()` and FastAPI dependency `get_db()`.
-- Contains a narrow SQLite schema compatibility helper for recently added symbol metadata columns.
+- Contains a narrow SQLite schema compatibility helper for recently added symbol and indicator columns.
 
 `apps/api/config.py`
 
@@ -360,6 +450,20 @@ What the frontend currently shows:
 - Uses in-memory SQLite.
 - Tests ingestion idempotency.
 - Tests missing-data, complete-data, and stale-data freshness behavior.
+
+`apps/api/tests/test_indicator_pipeline.py`
+
+- Uses in-memory SQLite.
+- Tests indicator computation and persistence.
+- Tests idempotent indicator upserts.
+- Tests insufficient-history ineligible state persistence.
+
+`apps/api/tests/test_recommendation_models.py`
+
+- Uses in-memory SQLite.
+- Tests recommendation evidence relationships.
+- Tests recommendation feedback relationships.
+- Tests source config persistence.
 
 `apps/api/__init__.py`
 
@@ -454,6 +558,15 @@ What the frontend currently shows:
 - Upserts symbols and bars.
 - Validates freshness/completeness.
 - Persists pipeline run status.
+- Invokes indicator computation after ingestion and freshness checks pass.
+
+`services/pipeline/indicators.py`
+
+- Core Epic 3 indicator persistence pipeline.
+- Loads stored daily bars.
+- Computes EMA9, EMA21, EMA50, EMA200, ATR14, RSI, ADX, relative volume, and 20-period breakout levels.
+- Upserts rows into `indicator_values`.
+- Marks symbols ineligible when there is insufficient OHLCV history.
 
 `services/pipeline/__init__.py`
 
@@ -463,7 +576,7 @@ What the frontend currently shows:
 
 - Indicator calculation helpers.
 - Implements EMA, RSI, ATR, and relative volume.
-- `calculate_adx()` is currently a placeholder that returns zero.
+- Implements ADX and 20-period breakout high/low helpers.
 
 `services/gates.py`
 
@@ -680,4 +793,3 @@ Open:
 ```text
 http://localhost:3000
 ```
-

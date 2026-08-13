@@ -6,8 +6,8 @@ import pandas as pd
 
 
 def calculate_ema(data: pd.Series, period: int) -> pd.Series:
-    """Calculate Exponential Moving Average."""
-    return data.ewm(span=period, adjust=False).mean()
+    """Calculate an EMA after a complete lookback window is available."""
+    return data.ewm(span=period, adjust=False, min_periods=period).mean()
 
 
 def calculate_rsi(data: pd.Series, period: int = 14) -> pd.Series:
