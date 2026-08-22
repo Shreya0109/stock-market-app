@@ -194,6 +194,11 @@ def run_market_data_pipeline(
         ingestion = ingest_market_data(db, provider, symbols=active_symbols, days=days)
         freshness = validate_data_freshness(db, symbols=active_symbols)
         blocked_reasons = [failure.reason for failure in ingestion.failures] + freshness.reasons
+        if not blocked_reasons:
+            from services.pipeline.indicators import compute_and_persist_indicators
+
+            indicators = compute_and_persist_indicators(db, symbols=active_symbols)
+            blocked_reasons.extend(indicators.ineligible.values())
         pipeline_run.completed_at = _utc_now_naive()
         pipeline_run.symbols_processed = ingestion.symbols_processed
         pipeline_run.status = "success" if not blocked_reasons else "blocked"
